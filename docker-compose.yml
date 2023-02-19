@@ -1,0 +1,34 @@
+version: "3"
+services:
+  api:
+    build:
+      dockerfile: Dockerfile
+      context: ./
+    ports:
+      - "4000:4000"
+    environment:
+      ALWAYS_YES: 1
+      DATABASE_URL: postgres://postgres:mypass@postgres:5432/go-covid?sslmode=disable
+      API_PREFIX: http://localhost:4000
+      HERE_API_KEY: ""
+    command: sh -c "/app/api migrate && /app/api serve"
+    depends_on:
+      postgres:
+        condition: service_healthy
+  postgres:
+    environment:
+      POSTGRES_DB: go-covid
+      POSTGRES_PASSWORD: mypass
+      POSTGRES_USER: postgres
+    image: postgres:14-alpine
+    platform: linux/amd64
+    ports:
+    - mode: ingress
+      target: 5432
+      published: 5432
+      protocol: tcp
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d postgres -U go-covid"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
